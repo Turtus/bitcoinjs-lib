@@ -218,7 +218,7 @@ class Transaction {
    * hashType, and then hashes the result.
    * This hash can then be used to sign the provided transaction input.
    */
-  hashForSignature(inIndex, prevOutScript, hashType) {
+  hashForSignature(inIndex, prevOutScript, hashType, time) {
     typeforce(
       types.tuple(types.UInt32, types.Buffer, /* types.UInt8 */ types.Number),
       arguments,
@@ -269,10 +269,19 @@ class Transaction {
       txTmp.ins[inIndex].script = ourScript;
     }
     // serialize and hash
-    const buffer = Buffer.allocUnsafe(txTmp.__byteLength(false) + 4);
-    buffer.writeInt32LE(hashType, buffer.length - 4);
-    txTmp.__toBuffer(buffer, 0, false);
-    return bcrypto.hash256(buffer);
+    const bufferOld = Buffer.allocUnsafe(txTmp.__byteLength(false) + 4);
+    bufferOld.writeInt32LE(hashType, bufferOld.length - 4);
+    txTmp.__toBuffer(bufferOld, 0, false);
+
+    const bufferVerge = Buffer.allocUnsafe(txTmp.__byteLength(false) + 8);
+    bufferVerge.writeInt32LE(hashType, bufferVerge.length - 4);
+    bufferVerge.writeInt32LE(time, bufferVerge.length - 8);
+    txTmp.__toBuffer(bufferVerge, 0, false);
+
+    console.log('bufferOld', bufferOld.toString('hex'))
+    console.log('bufferXVG', bufferVerge.toString('hex'))
+
+    return bcrypto.hash256(bufferVerge);
   }
   hashForWitnessV0(inIndex, prevOutScript, value, hashType) {
     typeforce(

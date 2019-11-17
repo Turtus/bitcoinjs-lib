@@ -159,7 +159,9 @@ class TransactionBuilder {
     hashType,
     witnessValue,
     witnessScript,
+    time
   ) {
+    console.log('time', time)
     trySign(
       getSigningData(
         this.network,
@@ -173,6 +175,7 @@ class TransactionBuilder {
         witnessValue,
         witnessScript,
         this.__USE_LOW_R,
+        time
       ),
     );
   }
@@ -980,6 +983,7 @@ function getSigningData(
   witnessValue,
   witnessScript,
   useLowR,
+  time
 ) {
   let vin;
   if (typeof signParams === 'number') {
@@ -1024,7 +1028,7 @@ function getSigningData(
   const ourPubKey =
     keyPair.publicKey || (keyPair.getPublicKey && keyPair.getPublicKey());
   if (!canSign(input)) {
-    if (witnessValue !== undefined) {
+    if (witnessValue !== undefined && witnessValue) {
       if (input.value !== undefined && input.value !== witnessValue)
         throw new Error('Input did not match witnessValue');
       typeforce(types.Satoshi, witnessValue);
@@ -1052,7 +1056,8 @@ function getSigningData(
       hashType,
     );
   } else {
-    signatureHash = tx.hashForSignature(vin, input.signScript, hashType);
+    signatureHash = tx.hashForSignature(vin, input.signScript, hashType, time);
+    console.log('signatureHash', signatureHash )
   }
   return {
     input,
