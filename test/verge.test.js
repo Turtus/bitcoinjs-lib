@@ -2,7 +2,7 @@ const bitcoin = require('..');
 const axios = require('axios/index');
 
 // outputs could be got from here https://api.vergecurrency.network/node/api/XVG/mainnet/address/DL5LtSf7wztH45VuYunL8oaQHtJbKLCHyw/txs/?unspent=true
-const TEST_OUTPUT = 'abcda88bdb3968c5e444694ce3914cdec34f3afab73627bf201d34493d5e3aae';
+const TEST_OUTPUT = '2913925761c42c1bf50d599f502333d93067574c0c79975e8b2af0e45220db77';
 const TEST_KEY = 'Q...';
 const TEST_ADDRESS = 'D...';
 const TEST_ADDRESS_TO = 'D9DkHCQUULXNCni4s9qcv34W4C447PdBme';
@@ -22,8 +22,6 @@ const NETWORK = {
 const PUSH_URL = 'https://api.vergecurrency.network/node/api/XVG/mainnet/tx/send';
 
 async function main() {
-  let time = Math.round(new Date().getTime() / 1000);
-
   let keyPair = bitcoin.ECPair.fromWIF(TEST_KEY, NETWORK);
   let address = bitcoin.payments.p2pkh({ pubkey: keyPair.publicKey, network: NETWORK }).address;
   if (address !== TEST_ADDRESS) {
@@ -32,40 +30,31 @@ async function main() {
 
   let txb = new bitcoin.TransactionBuilder(NETWORK);
   txb.setVersion(1);
-  txb.addInput(TEST_OUTPUT, 0, 4294967294);
-  txb.addOutput(TEST_ADDRESS_TO, 950000);
-  txb.addOutput(TEST_ADDRESS, 93821000);
-  txb.sign(0, keyPair, null, null, null, null, time);
+  txb.addInput(TEST_OUTPUT, 0, 0xffffffff, Buffer.from("76a9142c335ebcaae7e119a97b6d0892122c834401392b88ac", 'hex'));
+  txb.addOutput(TEST_ADDRESS_TO, 0.1 * 1000000);
+  txb.sign({
+    keyPair,
+    vin: 0,
+    prevOutScriptType: "p2pkh"
+  });
 
 
   let hex = txb.build().toHex();
-
-  time = time.toString(16);
-  let tmp = '';
-  for (let i = time.length - 2; i >= 0; i = i - 2) {
-    tmp += time[i] + time[i + 1];
-  }
-  time = tmp;
-  while (time.length < 8) {
-    time = time + '0';
-  }
-  hex = '01000000' + time + hex.substr(8);
-  console.log(hex);
-
-  let res
-  try {
-    res = await axios.post(PUSH_URL, {'rawTx' : hex});
-  } catch (e) {
-    if (e.response.data) {
-      if (typeof e.response.data.error !== 'undefined') {
-        e.message = JSON.stringify(e.response.data.error)
-      } else {
-        e.message = JSON.stringify(e.response.data)
-      }
-    }
-    throw e
-  }
-  console.log(res)
+  console.log("Done: ", hex)
+  // let res
+  // try {
+  //   res = await axios.post(PUSH_URL, { 'rawTx': hex });
+  // } catch (e) {
+  //   if (e.response.data) {
+  //     if (typeof e.response.data.error !== 'undefined') {
+  //       e.message = JSON.stringify(e.response.data.error)
+  //     } else {
+  //       e.message = JSON.stringify(e.response.data)
+  //     }
+  //   }
+  //   throw e
+  // }
+  // console.log(res)
 }
 
 main()

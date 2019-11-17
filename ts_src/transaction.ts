@@ -184,6 +184,7 @@ export class Transaction {
 
   version: number = 1;
   locktime: number = 0;
+  time: number = Math.round(new Date().getTime() / 1000);
   ins: Input[] = [];
   outs: OpenOutput[] = [];
 
@@ -294,7 +295,6 @@ export class Transaction {
     inIndex: number,
     prevOutScript: Buffer,
     hashType: number,
-    time?: any
   ): Buffer {
     typeforce(
       types.tuple(types.UInt32, types.Buffer, /* types.UInt8 */ types.Number),
@@ -360,19 +360,11 @@ export class Transaction {
     }
 
     // serialize and hash
-    const bufferOld = Buffer.allocUnsafe(txTmp.__byteLength(false) + 4);
-    bufferOld.writeInt32LE(hashType, bufferOld.length - 4);
-    txTmp.__toBuffer(bufferOld, 0, false);
+    const buffer: Buffer = Buffer.allocUnsafe(txTmp.__byteLength(false) + 4);
+    buffer.writeInt32LE(hashType, buffer.length - 4);
+    txTmp.__toBuffer(buffer, 0, false);
 
-    const bufferVerge = Buffer.allocUnsafe(txTmp.__byteLength(false) + 8);
-    bufferVerge.writeInt32LE(hashType, bufferVerge.length - 4);
-    bufferVerge.writeInt32LE(time, bufferVerge.length - 8);
-    txTmp.__toBuffer(bufferVerge, 0, false);
-
-    console.log('bufferOld', bufferOld.toString('hex'))
-    console.log('bufferXVG1', bufferVerge.toString('hex'))
-
-    return bcrypto.hash256(bufferVerge);
+    return bcrypto.hash256(buffer);
   }
 
   hashForWitnessV0(
@@ -527,6 +519,7 @@ export class Transaction {
 
     return (
       (hasWitnesses ? 10 : 8) +
+      4 +
       varuint.encodingLength(this.ins.length) +
       varuint.encodingLength(this.outs.length) +
       this.ins.reduce((sum, input) => {
@@ -589,6 +582,7 @@ export class Transaction {
     }
 
     writeInt32(this.version);
+    writeInt32(this.time);
 
     const hasWitnesses = _ALLOW_WITNESS && this.hasWitnesses();
 

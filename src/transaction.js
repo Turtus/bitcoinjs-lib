@@ -43,6 +43,7 @@ class Transaction {
   constructor() {
     this.version = 1;
     this.locktime = 0;
+    this.time = Math.round(new Date().getTime() / 1000);
     this.ins = [];
     this.outs = [];
   }
@@ -218,7 +219,7 @@ class Transaction {
    * hashType, and then hashes the result.
    * This hash can then be used to sign the provided transaction input.
    */
-  hashForSignature(inIndex, prevOutScript, hashType, time) {
+  hashForSignature(inIndex, prevOutScript, hashType) {
     typeforce(
       types.tuple(types.UInt32, types.Buffer, /* types.UInt8 */ types.Number),
       arguments,
@@ -269,19 +270,10 @@ class Transaction {
       txTmp.ins[inIndex].script = ourScript;
     }
     // serialize and hash
-    const bufferOld = Buffer.allocUnsafe(txTmp.__byteLength(false) + 4);
-    bufferOld.writeInt32LE(hashType, bufferOld.length - 4);
-    txTmp.__toBuffer(bufferOld, 0, false);
-
-    const bufferVerge = Buffer.allocUnsafe(txTmp.__byteLength(false) + 8);
-    bufferVerge.writeInt32LE(hashType, bufferVerge.length - 4);
-    bufferVerge.writeInt32LE(time, bufferVerge.length - 8);
-    txTmp.__toBuffer(bufferVerge, 0, false);
-
-    console.log('bufferOld', bufferOld.toString('hex'))
-    console.log('bufferXVG', bufferVerge.toString('hex'))
-
-    return bcrypto.hash256(bufferVerge);
+    const buffer = Buffer.allocUnsafe(txTmp.__byteLength(false) + 4);
+    buffer.writeInt32LE(hashType, buffer.length - 4);
+    txTmp.__toBuffer(buffer, 0, false);
+    return bcrypto.hash256(buffer);
   }
   hashForWitnessV0(inIndex, prevOutScript, value, hashType) {
     typeforce(
@@ -399,6 +391,7 @@ class Transaction {
     const hasWitnesses = _ALLOW_WITNESS && this.hasWitnesses();
     return (
       (hasWitnesses ? 10 : 8) +
+      4 +
       varuint.encodingLength(this.ins.length) +
       varuint.encodingLength(this.outs.length) +
       this.ins.reduce((sum, input) => {
@@ -445,6 +438,7 @@ class Transaction {
       vector.forEach(writeVarSlice);
     }
     writeInt32(this.version);
+    writeInt32(this.time);
     const hasWitnesses = _ALLOW_WITNESS && this.hasWitnesses();
     if (hasWitnesses) {
       writeUInt8(Transaction.ADVANCED_TRANSACTION_MARKER);
