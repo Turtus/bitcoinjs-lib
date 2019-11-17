@@ -249,7 +249,6 @@ export class TransactionBuilder {
     hashType?: number,
     witnessValue?: number,
     witnessScript?: Buffer,
-    time ?: any,
   ): void {
     trySign(
       getSigningData(
@@ -264,7 +263,6 @@ export class TransactionBuilder {
         witnessValue,
         witnessScript,
         this.__USE_LOW_R,
-        time,
       ),
     );
   }
@@ -1222,7 +1220,6 @@ function getSigningData(
   witnessValue?: number,
   witnessScript?: Buffer,
   useLowR?: boolean,
-  time?: any,
 ): SigningData {
   let vin: number;
   if (typeof signParams === 'number') {
@@ -1307,7 +1304,6 @@ function getSigningData(
       vin,
       input.signScript as Buffer,
       hashType,
-      time
     );
   }
 
